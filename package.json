@@ -1,0 +1,67 @@
+{
+    "name": "varwolf",
+    "version": "1.0.0",
+    "description": "A Modern CSS Variable Manipulation Library for React.",
+    "type": "module",
+    "main": "./dist/index.js",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.js"
+        }
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
+    "scripts": {
+        "dev": "vite",
+        "build": "tsc -b && vite build",
+        "build:lib": "vite build --config vite.config.lib.ts",
+        "preview": "vite preview",
+        "prepublishOnly": "pnpm run build:lib"
+    },
+    "keywords": [
+        "react",
+        "css",
+        "css-variables",
+        "css-in-js",
+        "styling",
+        "css-custom-properties",
+        "typescript",
+        "dynamic-styles",
+        "pseudo-classes",
+        "state-management"
+    ],
+    "author": "Kunal Tanwar",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/KunalTanwar/varwolf.git"
+    },
+    "bugs": {
+        "url": "https://github.com/KunalTanwar/varwolf/issues"
+    },
+    "homepage": "https://github.com/KunalTanwar/varwolf#readme",
+    "peerDependencies": {
+        "react": ">=16.8.0",
+        "react-dom": ">=16.8.0"
+    },
+    "devDependencies": {
+        "@types/node": "^24.7.2",
+        "@types/react": "^19.2.2",
+        "@types/react-dom": "^19.2.1",
+        "@vitejs/plugin-react": "^5.0.4",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
+        "typescript": "^5.9.3",
+        "vite": "^7.1.9",
+        "vite-plugin-dts": "^4.5.4",
+        "vite-tsconfig-paths": "^5.1.4"
+    },
+    "sideEffects": false
+}

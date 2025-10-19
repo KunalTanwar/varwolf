@@ -1,0 +1,63 @@
+# Development files
+node_modules/
+src/
+public/
+.vscode/
+.idea/
+
+# Testing
+coverage/
+__tests__/
+*.test.js
+*.test.ts
+*.test.tsx
+*.spec.js
+*.spec.ts
+*.spec.tsx
+jest.config.js
+vitest.config.ts
+
+# Logs
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+*.log
+
+# Environment
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.DS_Store
+
+# Build config (not the output!)
+vite.config.ts
+vite.config.lib.ts
+tsconfig.json
+tsconfig.node.json
+babel.config.js
+webpack.config.js
+webpack.config.*.js
+
+# Development artifacts
+*.tsbuildinfo
+*.tgz
+*.swp
+
+# Development HTML
+index.html
+
+# Git
+.git/
+.gitignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Scripts
+scripts/
+
+
