@@ -1,6 +1,6 @@
 {
     "name": "varwolf",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "description": "A Modern CSS Variable Manipulation Library for React.",
     "type": "module",
     "main": "./dist/index.js",
