@@ -1,8 +1,8 @@
-import { djb2, toStableString } from "../utils"
+import { fnv1a, toStableString } from "../utils"
 
 export function createStableHash(value: any) {
     const stableString = toStableString(value)
-    const hash = djb2(stableString)
+    const hash = fnv1a(stableString)
 
     return `vw-${hash}`
 }
