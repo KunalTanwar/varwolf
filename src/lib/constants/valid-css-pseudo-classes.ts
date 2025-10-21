@@ -1,5 +1,3 @@
-import type { KebabToCamelCase } from "../types/kebab-to-camel"
-
 const EXPERIMENTAL_PSEUDO_CLASSES = [
     "blank",
     "heading", // 🧪
@@ -96,7 +94,7 @@ export const VALID_PSEUDO_CLASSES = new Set([
     ...STANDARD_PSEUDO_CLASSES,
 ])
 
-export type MostCommonPseudoClass = KebabToCamelCase<(typeof MOST_COMMON_PSEUDO_CLASSES)[number]>
+export type MostCommonPseudoClass = (typeof MOST_COMMON_PSEUDO_CLASSES)[number]
 export type ValidPseudoClass =
     | (typeof EXPERIMENTAL_PSEUDO_CLASSES)[number]
     | (typeof FUNCTIONAL_PSEUDO_CLASSES)[number]
