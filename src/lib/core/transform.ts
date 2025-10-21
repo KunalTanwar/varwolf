@@ -1,5 +1,5 @@
-import { toKebabCase } from "../utils"
-import { devWarn } from "../utils/dev-warnings"
+import { MOST_COMMON_PSEUDO_CLASSES_SET, type MostCommonPseudoClass } from "../constants"
+import { devWarn, toKebabCase } from "../utils"
 
 export interface TransformResult {
     CSSVars: Record<string, string>
@@ -45,7 +45,16 @@ export function transformStyles(styles: Record<string, any>, context: TransformC
                 }
             }
         } else if (key.startsWith("_")) {
-            const pseudoClass = toKebabCase(key.slice(1))
+            const pseudoClass = toKebabCase(key.slice(1)) as MostCommonPseudoClass
+
+            if (!MOST_COMMON_PSEUDO_CLASSES_SET.has(pseudoClass)) {
+                devWarn(
+                    `Unsupported pseudo-class: "${pseudoClass}" (from key: "${key}")`,
+                    `\nVarwolf supports the 16 most common Pseudo-classes: \n[\n\t${Array.from(
+                        MOST_COMMON_PSEUDO_CLASSES_SET
+                    ).join(",\n\t")}\n]`
+                )
+            }
 
             const compoundSelector = [...parentPseudoClasses, pseudoClass].join(":")
 
@@ -90,8 +99,8 @@ export function transformStyles(styles: Record<string, any>, context: TransformC
                     if (!targetStateVars) {
                         devWarn(
                             `State "${fromState}" does not exist but is referenced by "${varName}".`,
-                            `Available states: ${Array.from(stateVarsMap.keys()).join(", ")}`,
-                            `Make sure to define _${fromState} before referencing it.`
+                            `\nAvailable states: ${Array.from(stateVarsMap.keys()).join(", ")}.`,
+                            `\nMake sure to define _${fromState} before referencing it.`
                         )
                     }
 
