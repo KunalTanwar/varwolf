@@ -1,5 +1,4 @@
-import { toKebabCase } from "../utils"
-import { isDev } from "../utils/dev-warnings"
+import { isDev, toKebabCase } from "../utils"
 
 const STYLE_TAG_ID = "varwolf-styles"
 const STYLE_CACHE = new Set<string>()
@@ -113,6 +112,7 @@ export function getInjectedCSS(): string {
 
     if (styleTag.sheet) {
         const rules = Array.from(styleTag.sheet.cssRules)
+
         return rules.map((rule) => rule.cssText).join("\n")
     }
 
