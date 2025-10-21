@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useRef } from "react"
 
 import type { VarwolfStyles } from "../types"
 import { createStableHash, injectCSS, transformStyles } from "../core"
@@ -8,14 +8,21 @@ export interface UseVarwolfResult {
 }
 
 export function useVarwolf(styles: VarwolfStyles): UseVarwolfResult {
-    return useMemo(() => {
+    const styleHash = createStableHash(styles)
+    const prevHashRef = useRef<string>("")
+    const cachedResultRef = useRef<UseVarwolfResult | null>(null)
+
+    if (prevHashRef.current !== styleHash || cachedResultRef.current === null) {
         const { CSSVars, regularStyles, pseudoClasses } = transformStyles(styles)
-        const hash = createStableHash(styles)
 
-        injectCSS(hash, CSSVars, regularStyles, pseudoClasses)
+        injectCSS(styleHash, CSSVars, regularStyles, pseudoClasses)
 
-        return {
-            className: hash,
+        cachedResultRef.current = {
+            className: styleHash,
         }
-    }, [styles])
+
+        prevHashRef.current = styleHash
+    }
+
+    return cachedResultRef.current
 }
