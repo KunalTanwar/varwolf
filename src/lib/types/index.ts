@@ -1,7 +1,8 @@
 import type { MostCommonPseudoClass } from "../constants"
+import type { KebabToCamelCase } from "./kebab-to-camel"
 
 type VariablePrefix = `__${string}`
-type PseudoClassPrefix = `_${MostCommonPseudoClass}`
+type PseudoClassPrefix = `_${KebabToCamelCase<MostCommonPseudoClass>}`
 
 type VariableValue =
     | string
