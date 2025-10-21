@@ -13,11 +13,11 @@ export function enableWarnings(): void {
 export function devWarn(message: string, ...details: string[]): void {
     if (!IS_DEV || !warningsEnabled) return
 
-    console.warn(`[Varwolf Warning] ${message}`, ...details.map((d) => `\n${d}`))
+    console.warn("%c[Varwolf Warning] :", "font-weight: 700", `${message}`, ...details.map((detail) => `\n${detail}`))
 }
 
 export function devError(message: string, ...details: string[]): void {
-    console.error(`[Varwolf Error] ${message}`, ...details.map((d) => `\n${d}`))
+    console.error("%c[Varwolf Error] :", "font-weight: 700", `${message}`, ...details.map((detail) => `\n${detail}`))
 }
 
 export function isDev(): boolean {
