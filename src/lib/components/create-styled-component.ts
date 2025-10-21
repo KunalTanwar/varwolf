@@ -22,12 +22,14 @@ export function createStyledComponent<T extends ElementType>(element: T) {
 
         const processedInlineStyle = inlineStyle ? processInlineStyle(inlineStyle) : undefined
 
-        return React.createElement(element, {
+        const elementProps = {
             ...restProps,
             ref,
             className: combinedClassName,
             style: processedInlineStyle,
-        } as any)
+        }
+
+        return React.createElement(element, elementProps)
     })
 
     Component.displayName = `Varwolf(${typeof element === "string" ? element : "Component"})`
