@@ -1,38 +1,28 @@
 export const toStableString = (value: any): string => {
-    if (value === null) {
-        return "null"
-    }
+    return JSON.stringify(value, (_key, val) => {
+        if (val === null) return val
 
-    if (value === undefined) {
-        return "undefined"
-    }
+        if (typeof val === "bigint") {
+            return val.toString()
+        }
 
-    const valueType = typeof value
+        if (typeof val === "function") {
+            return val.toString().replace(/\s+/g, " ").trim()
+        }
 
-    if (valueType === "string") return `"${value}"`
-    if (valueType === "number") return String(value)
-    if (valueType === "boolean") return String(value)
+        if (val && typeof val === "object" && !Array.isArray(val)) {
+            if (val instanceof Date || val instanceof RegExp) {
+                return val.toString()
+            }
 
-    if (valueType === "function") {
-        return value.toString().replace(/\s+/g, " ").trim()
-    }
+            return Object.keys(val)
+                .sort()
+                .reduce((acc, k) => {
+                    acc[k] = val[k]
+                    return acc
+                }, {} as Record<string, any>)
+        }
 
-    if (Array.isArray(value)) {
-        const items = value.map(toStableString).join(",")
-
-        return `[${items}]`
-    }
-
-    if (valueType === "object") {
-        const keys = Object.keys(value).sort()
-        const pairs = keys.map((key) => {
-            const serializedValue = toStableString(value[key])
-
-            return `"${key}":${serializedValue}`
-        })
-
-        return `{${pairs.join(",")}}`
-    }
-
-    return String(value)
+        return val
+    })
 }
