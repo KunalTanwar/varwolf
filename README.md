@@ -87,9 +87,9 @@ Define CSS custom properties with the `__` prefix:
 ```css
 .vw-abc123 {
     --primary: blue;
-    --spacing: 16;
+    --importance: 16;
     background-color: var(--primary);
-    padding: 16px;
+    z-index: var(--importance);
 }
 ```
 
