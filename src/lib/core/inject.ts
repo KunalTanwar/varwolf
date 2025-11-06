@@ -19,6 +19,12 @@ const STYLE_TAG_ID = "varwolf-styles"
 const STYLE_CACHE = new Set<string>()
 
 /**
+ * CSS keywords that should not be wrapped in quotes for the content property.
+ * @internal
+ **/
+const CONTENT_KEYWORDS = new Set(["none", "normal", "initial", "inherit", "unset", "revert", "revert-layer"])
+
+/**
  * Retrieves or creates the global Varwolf style tag in the document head.
  *
  * Ensures a single <style> element exists for all Varwolf-generated CSS.
@@ -49,6 +55,58 @@ function fetchStyleTag(): HTMLStyleElement {
 }
 
 /**
+ * Formats a CSS property value, with special handling for the content property.
+ *
+ * The content property for pseudo-elements requires special handling:
+ * - Empty strings → `""`
+ * - Plain text → wrapped in quotes
+ * - Already quoted → preserved as-is
+ * - CSS keywords (none, normal, etc.) → preserved as-is
+ *
+ * @param key - The CSS property name
+ * @param value - The CSS property value
+ * @returns Formatted CSS declaration (e.g., "content: \"→\";")
+ *
+ * @example
+ * ```
+ * formatCSSDeclaration('content', '')        // → 'content: "";'
+ * formatCSSDeclaration('content', '→')       // → 'content: "→";'
+ * formatCSSDeclaration('content', '"→"')     // → 'content: "→";'
+ * formatCSSDeclaration('content', 'none')    // → 'content: none;'
+ * formatCSSDeclaration('width', '100%')      // → 'width: 100%;'
+ * ```
+ *
+ * @internal
+ **/
+function formatCSSDeclaration(key: string, value: string): string {
+    // Special handling for content property in pseudo-elements
+    if (key === "content") {
+        const stringValue = String(value)
+
+        // Already has quotes (single or double)
+        if (stringValue.startsWith('"') || stringValue.startsWith("'")) {
+            return `${key}: ${value};`
+        }
+
+        // CSS keyword (none, normal, initial, etc.)
+        if (CONTENT_KEYWORDS.has(stringValue.toLowerCase())) {
+            return `${key}: ${value};`
+        }
+
+        // URL or attr() function
+        if (stringValue.startsWith("url(") || stringValue.startsWith("attr(")) {
+            return `${key}: ${value};`
+        }
+
+        // Wrap plain text or empty string in double quotes
+        return `${key}: "${value}";`
+    }
+
+    // Regular CSS property
+    return `${key}: ${value};`
+}
+
+/**
  * Injects CSS rules into the document for a given style hash.
  *
  * Core function that converts Varwolf style objects into CSS and injects them
@@ -60,6 +118,7 @@ function fetchStyleTag(): HTMLStyleElement {
  * - CSS custom properties (--variables)
  * - Regular CSS properties
  * - Pseudo-class styles (:hover, :focus, etc.)
+ * - Pseudo-element styles (::before, ::after, etc.)
  *
  * Automatically skips injection if the hash is already cached.
  *
@@ -67,6 +126,7 @@ function fetchStyleTag(): HTMLStyleElement {
  * @param CSSVars - CSS custom properties with -- prefix (e.g., { '--bg': 'red' })
  * @param regularStyles - Regular CSS properties in camelCase (e.g., { padding: '10px' })
  * @param pseudoClasses - Pseudo-class styles mapped by pseudo-class name (e.g., { hover: { '--bg': 'blue' } })
+ * @param pseudoElements - Pseudo-element styles mapped by element name (e.g., { before: { 'content': '""' } })
  *
  * @example
  * ```
@@ -74,20 +134,22 @@ function fetchStyleTag(): HTMLStyleElement {
  *   'vw-12345',
  *   { '--bg': 'red', '--color': 'white' },
  *   { padding: '10px', display: 'flex' },
- *   { hover: { '--bg': 'blue' }, focus: { '--border': '2px solid' } }
+ *   { hover: { '--bg': 'blue' } },
+ *   { before: { 'content': '"→"', 'color': 'blue' } }
  * )
  *
  * // Generates CSS:
  * // .vw-12345 { --bg: red; --color: white; padding: 10px; display: flex; }
  * // .vw-12345:hover { --bg: blue; }
- * // .vw-12345:focus { --border: 2px solid; }
+ * // .vw-12345::before { content: "→"; color: blue; }
  * ```
  **/
 export function injectCSS(
     hash: string,
     CSSVars: Record<string, string>,
     regularStyles: Record<string, any>,
-    pseudoClasses: Record<string, Record<string, string>> = {}
+    pseudoClasses: Record<string, Record<string, string>> = {},
+    pseudoElements: Record<string, Record<string, string>> = {}
 ): void {
     // Skip if these styles have already been injected
     if (STYLE_CACHE.has(hash)) {
@@ -102,24 +164,36 @@ export function injectCSS(
         ...CSSVars,
     }
 
-    // Generate base class CSS rule if there are any styles
     for (const [key, value] of Object.entries(regularStyles)) {
         const kebabKey = toKebabCase(key)
         baseStyles[kebabKey] = String(value)
     }
 
-    // Generate pseudo-class CSS rules (e.g., .vw-12345:hover { ... })
+    // Generate base class CSS rule if there are any styles
     if (Object.keys(baseStyles).length > 0) {
         const baseVars = Object.entries(baseStyles)
-            .map(([key, value]) => `${key}: ${value};`)
+            .map(([key, value]) => formatCSSDeclaration(key, value))
             .join(" ")
 
         CSSRules.push(`.${hash} { ${baseVars} }`)
     }
 
+    // Generate pseudo-element CSS rules (e.g., .vw-12345::before { ... })
+    for (const [element, styles] of Object.entries(pseudoElements)) {
+        const elementStyles = Object.entries(styles)
+            .map(([key, value]) => formatCSSDeclaration(key, value))
+            .join(" ")
+
+        if (elementStyles) {
+            const cssElement = toKebabCase(element) // firstLetter -> first-letter
+            CSSRules.push(`.${hash}::${cssElement} { ${elementStyles} }`)
+        }
+    }
+
+    // Generate pseudo-class CSS rules (e.g., .vw-12345:hover { ... })
     for (const [pseudoClass, vars] of Object.entries(pseudoClasses)) {
         const pseudoVars = Object.entries(vars)
-            .map(([key, value]) => `${key}: ${value};`)
+            .map(([key, value]) => formatCSSDeclaration(key, value))
             .join(" ")
 
         if (pseudoVars) {
@@ -225,6 +299,7 @@ export function getCacheSize(): number {
  * // Output:
  * // .vw-12345 { --bg: red; padding: 10px; }
  * // .vw-12345:hover { --bg: blue; }
+ * // .vw-12345::before { content: "→"; }
  * ```
  **/
 export function getInjectedCSS(): string {

@@ -2,7 +2,7 @@
  * @fileoverview Core TypeScript type definitions for Varwolf styling system
  * @module varwolf/types
  **/
-import type { MostCommonPseudoClass } from "../constants"
+import type { MostCommonPseudoClass, PseudoElement } from "../constants"
 import type { KebabToCamelCase } from "./kebab-to-camel"
 
 /**
@@ -42,6 +42,8 @@ type VariablePrefix = `__${string}`
  * ```
  **/
 type PseudoClassPrefix = `_${KebabToCamelCase<MostCommonPseudoClass>}`
+
+type PseudoElementPrefix = `$${PseudoElement}`
 
 /**
  * Type representing possible values for CSS variables.
@@ -148,6 +150,15 @@ type PseudoClasses = {
     [key in PseudoClassPrefix]?: VarwolfStyles
 }
 
+type PseudoElementStyles = React.CSSProperties &
+    CSSVariables & {
+        [K in PseudoClassPrefix]?: never
+    }
+
+type PseudoElements = {
+    [key in PseudoElementPrefix]?: PseudoElementStyles
+}
+
 /**
  * Complete Varwolf style object type for the `style` prop.
  *
@@ -192,7 +203,7 @@ type PseudoClasses = {
  * </varwolf.button>
  * ```
  **/
-export type VarwolfStyles = React.CSSProperties & CSSVariables & PseudoClasses
+export type VarwolfStyles = React.CSSProperties & CSSVariables & PseudoClasses & PseudoElements
 
 /**
  * Varwolf style object type for the `inlineStyle` prop.

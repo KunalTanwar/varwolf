@@ -115,10 +115,10 @@ export function useVarwolf(styles: VarwolfStyles): UseVarwolfResult {
     // Only process and inject styles if hash has changed
     if (prevHashRef.current !== styleHash || cachedResultRef.current === null) {
         // Transform Varwolf styles into CSS-ready format
-        const { CSSVars, regularStyles, pseudoClasses } = transformStyles(styles)
+        const { CSSVars, regularStyles, pseudoClasses, pseudoElements } = transformStyles(styles)
 
         // Inject CSS into document (no-op if already injected)
-        injectCSS(styleHash, CSSVars, regularStyles, pseudoClasses)
+        injectCSS(styleHash, CSSVars, regularStyles, pseudoClasses, pseudoElements)
 
         // Cache the result
         cachedResultRef.current = {

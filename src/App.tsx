@@ -12,9 +12,12 @@ function App() {
                 __size: "100px",
 
                 color: "white",
+                display: "flex",
                 aspectRatio: 1 / 1,
                 width: "var(--size)",
+                alignItems: "center",
                 height: "var(--size)",
+                justifyContent: "center",
                 backgroundColor: "var(--bg)",
 
                 _hover: {
@@ -24,6 +27,20 @@ function App() {
 
                 _active: {
                     __size: (cv) => `calc(${cv} * 0.5)`,
+                },
+
+                $after: {
+                    __size: "1rem",
+
+                    content: "",
+                    position: "absolute",
+                    top: 0,
+                    right: 0,
+                    width: "var(--size)",
+                    height: "var(--size)",
+                    translate: "50% -50%",
+                    borderRadius: "100vmax",
+                    backgroundColor: "limegreen",
                 },
             }}
             inlineStyle={{

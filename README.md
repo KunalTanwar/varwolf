@@ -8,6 +8,7 @@ Varwolf lets you dynamically control CSS variables with a clean, type-safe API. 
 
 -   🎯 **CSS Variable-First** — Manipulate CSS custom properties, not just styles
 -   🔄 **Dynamic State Management** — Variables change with pseudo-classes (`:hover`, `:active`, etc.)
+-   ✨ **Pseudo-Elements** — Style `::before`, `::after`, and more with `$` prefix
 -   🪆 **Nested Pseudo-Selectors** — Support for complex states like `:hover:disabled`
 -   🔗 **Cross-State References** — Reference values from other pseudo-states
 -   📐 **`currentValue` Functions** — Modify existing values instead of replacing them
@@ -55,6 +56,11 @@ function App() {
                 },
                 _active: {
                     __scale: 0.95,
+                },
+
+                $before: {
+                    content: "->",
+                    marginLeft: "4px",
                 },
             }}
         >
@@ -134,6 +140,134 @@ Change variables on pseudo-states using camelCase:
 .vw-abc123:disabled {
     --bg-color: gray;
 }
+```
+
+## Pseudo-Elements (`$` prefix)
+
+Style `::before`, `::after`, and other pseudo-elements with the `$` prefix:
+
+```tsx
+<varwolf.button
+    style={{
+        __iconColor: "white",
+        backgroundColor: "blue",
+        padding: "10px 20px",
+
+        $before: {
+            content: "→",
+            marginRight: "5px",
+            __iconColor: "white",
+            color: "var(--icon-color)",
+        },
+
+        _hover: {
+            __iconColor: "yellow",
+            backgroundColor: "darkblue",
+        },
+    }}
+>
+    Next
+</varwolf.button>
+```
+
+**Generates:**
+
+```css
+.vw-abc123 {
+    --icon-color: white;
+    background-color: blue;
+    padding: 10px 20px;
+}
+.vw-abc123::before {
+    content: "→";
+    margin-right: 5px;
+    color: var(--icon-color);
+}
+.vw-abc123:hover {
+    --icon-color: yellow;
+    background-color: darkblue;
+}
+```
+
+#### Supported Pseudo-Elements
+
+```plaintext
+::after           — $after
+::backdrop        — $backdrop (for dialogs)
+::before          — $before
+::first-letter    — $firstLetter
+::first-line      — $firstLine
+::marker          — $marker (for list items)
+::placeholder     — $placeholder (for inputs)
+::selection       — $selection
+```
+
+#### Real-World Examples
+
+**Icon Badge:**
+
+```tsx
+<varwolf.button
+    style={{
+        position: "relative",
+        padding: "10px 20px",
+
+        $after: {
+            content: "3",
+            position: "absolute",
+            top: "-8px",
+            right: "-8px",
+            width: "20px",
+            height: "20px",
+            borderRadius: "50%",
+            __badge: "red",
+            backgroundColor: "var(--badge)",
+            color: "white",
+            fontSize: "12px",
+        },
+    }}
+>
+    Notifications
+</varwolf.button>
+```
+
+**Decorative Underline:**
+
+```tsx
+<varwolf.h2
+    style={{
+        position: "relative",
+        paddingBottom: "10px",
+
+        $after: {
+            content: "",
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            width: "50px",
+            height: "3px",
+            __accent: "#0070f3",
+            backgroundColor: "var(--accent)",
+        },
+    }}
+>
+    Section Title
+</varwolf.h2>
+```
+
+**Custom Selection Color:**
+
+```tsx
+<varwolf.p
+    style={{
+        $selection: {
+            backgroundColor: "yellow",
+            color: "black",
+        },
+    }}
+>
+    Try selecting this text!
+</varwolf.p>
 ```
 
 ### Static vs Dynamic Styles
@@ -444,6 +578,7 @@ function CustomComponent() {
         __bg: "red",
         backgroundColor: "var(--bg)",
         _hover: { __bg: "darkred" },
+        $before: { content: "->" },
     })
 
     // Use with third-party components
@@ -488,26 +623,6 @@ import { varwolf } from "varwolf"
 // ❌ Error: Property 'disabled' does not exist on type 'a'
 <varwolf.a disabled />
 ```
-
-## 🗺️ Roadmap
-
-### v1.1 (Planned)
-
--   📱 **Media Query Variables** — Responsive CSS variables (`_sm`, `_md`, `_lg`)
--   📦 **Container Query Variables** — Modern responsive design
--   🎨 **Color Manipulation Helpers** — `darken()`, `lighten()`, `opacity()`
-
-### v1.2 (Planned)
-
--   🎭 **Variable Groups** — Organize related variables
--   📋 **Variable Presets** — Reusable configurations
--   🎬 **CSS Variable Animations** — Animate transitions
-
-### v2.0 (Future)
-
--   🌐 **SSR Support** — Next.js, Remix, Gatsby
--   🔍 **Debug Tools** — Visual variable inspector
--   🎨 **Theme System** — Built-in theming
 
 ## 🤔 FAQ
 

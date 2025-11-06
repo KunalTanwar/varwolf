@@ -2,7 +2,12 @@
  * @fileoverview Style transformation engine for converting Varwolf styles to CSS
  * @module varwolf/core/transform
  **/
-import { MOST_COMMON_PSEUDO_CLASSES_SET, type MostCommonPseudoClass } from "../constants"
+import {
+    MOST_COMMON_PSEUDO_CLASSES_SET,
+    PSEUDO_ELEMENTS_SET,
+    type MostCommonPseudoClass,
+    type PseudoElement,
+} from "../constants"
 import { devWarn, toKebabCase } from "../utils"
 
 /**
@@ -11,11 +16,13 @@ import { devWarn, toKebabCase } from "../utils"
  * @property CSSVars - CSS custom properties with -- prefix (e.g., { '--bg': 'red' })
  * @property regularStyles - Standard CSS properties (e.g., { padding: '10px' })
  * @property pseudoClasses - Pseudo-class styles organized by selector (e.g., { 'hover': { '--bg': 'blue' } })
+ * @property pseudoElements - Pseudo-element styles organized by element (e.g., { 'before': { 'content': '""' } })
  **/
 export interface TransformResult {
     CSSVars: Record<string, string>
     regularStyles: React.CSSProperties
     pseudoClasses: Record<string, Record<string, string>>
+    pseudoElements: Record<string, Record<string, string>>
 }
 
 /**
@@ -113,6 +120,7 @@ export function transformStyles(styles: Record<string, any>, context: TransformC
     const CSSVars: Record<string, string> = {}
     const regularStyles: Record<string, any> = {}
     const pseudoClasses: Record<string, Record<string, string>> = {}
+    const pseudoElements: Record<string, Record<string, string>> = {}
 
     // Initialize state tracking for variable resolution
     const stateVarsMap = context.stateVarsMap || new Map<string, Record<string, string>>()
@@ -139,6 +147,39 @@ export function transformStyles(styles: Record<string, any>, context: TransformC
                     stateVarsMap.get("base")![varName] = String(value)
                 }
             }
+        } else if (key.startsWith("$")) {
+            const elementName = key.slice(1) as PseudoElement
+
+            if (!PSEUDO_ELEMENTS_SET.has(elementName)) {
+                devWarn(
+                    `Unsupported pseudo-element: "${elementName}" (from key: "${key}")`,
+                    `\nVarwolf supports these pseudo-elements: \n[\n\t${Array.from(PSEUDO_ELEMENTS_SET).join(
+                        ",\n\t"
+                    )}\n]`
+                )
+
+                continue
+            }
+
+            // Recursively process pseudo-element styles
+            const nestedResult = transformStyles(value, {
+                parentVars: CSSVars,
+                stateVarsMap,
+                parentPseudoClasses: [],
+            })
+
+            // Merge CSS variables and regular styles for this pseudo-element
+            const mergedStyles: Record<string, string> = {
+                ...nestedResult.CSSVars,
+            }
+
+            for (const [cssKey, cssValue] of Object.entries(nestedResult.regularStyles)) {
+                const kebabKey = toKebabCase(cssKey)
+
+                mergedStyles[kebabKey] = String(cssValue)
+            }
+
+            pseudoElements[elementName] = mergedStyles
         } else if (key.startsWith("_")) {
             // Pseudo-class: _hover → :hover
             const pseudoClass = toKebabCase(key.slice(1)) as MostCommonPseudoClass
@@ -247,5 +288,5 @@ export function transformStyles(styles: Record<string, any>, context: TransformC
         }
     }
 
-    return { CSSVars, regularStyles, pseudoClasses }
+    return { CSSVars, regularStyles, pseudoClasses, pseudoElements }
 }
