@@ -74,6 +74,7 @@ type VariableValue =
     | string
     | number
     | ((currentValue: string | number, from?: MostCommonPseudoClass) => string | number)
+    | Record<string, string | number>
 
 /**
  * Type for CSS custom properties (CSS variables) with __ prefix.

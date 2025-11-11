@@ -2,12 +2,13 @@
 
 **A Modern CSS Variable Manipulation Library for React.**
 
-Varwolf lets you dynamically control CSS variables with a clean, type-safe API. Write styles with pseudo-classes, nested selectors, and dynamic values — all while maintaining the performance and specificity benefits of CSS-in-JS.
+Varwolf lets you dynamically control CSS variables with a clean, type-safe API. Write styles with pseudo-classes, pseudo-elements, variable groups, and dynamic values — all while maintaining the performance and specificity benefits of CSS-in-JS.
 
 ## ✨ Features
 
 -   🎯 **CSS Variable-First** — Manipulate CSS custom properties, not just styles
 -   🔄 **Dynamic State Management** — Variables change with pseudo-classes (`:hover`, `:active`, etc.)
+-   📦 **Variable Groups** — Organize related variables with nested objects (NEW in v1.2.0)
 -   ✨ **Pseudo-Elements** — Style `::before`, `::after`, and more with `$` prefix
 -   🪆 **Nested Pseudo-Selectors** — Support for complex states like `:hover:disabled`
 -   🔗 **Cross-State References** — Reference values from other pseudo-states
@@ -15,7 +16,7 @@ Varwolf lets you dynamically control CSS variables with a clean, type-safe API. 
 -   ⚡ **Hybrid Rendering** — Stylesheet for static styles, inline for dynamic values
 -   🎨 **Full TypeScript Support** — Complete type safety with autocomplete
 -   🧩 **Zero Dependencies** — Ultra-lightweight (~2KB gzipped) - Smallest CSS-in-JS library!
--   🚀 **Performance Optimized** — Smart caching, stable hashing, dev/prod modes
+-   🚀 **Performance Optimized** — Smart caching, stable hashing, lazy variable generation
 
 ## 📦 Installation
 
@@ -29,8 +30,6 @@ yarn add varwolf
 # pnpm
 pnpm add varwolf
 ```
-
-> **Note:** The npm package version is `1.0.3` to maintain version immutability. This corresponds to the GitHub `v1.0.0` release.
 
 ## 🚀 Quick Start
 
@@ -59,8 +58,8 @@ function App() {
                 },
 
                 $before: {
-                    content: "->",
-                    marginLeft: "4px",
+                    content: "→",
+                    marginRight: "5px",
                 },
             }}
         >
@@ -97,6 +96,73 @@ Define CSS custom properties with the `__` prefix:
     background-color: var(--primary);
     z-index: var(--importance);
 }
+```
+
+### Variable Groups
+
+**NEW in v1.2.0:** Organize related variables with nested objects. Only used variables are generated for optimal performance.
+
+```tsx
+<varwolf.div
+    style={{
+        __spacing: {
+            xs: "4px",
+            sm: "8px",
+            md: "16px",
+            lg: "24px",
+            xl: "32px",
+        },
+
+        __colors: {
+            primary: "#0070f3",
+            secondary: "#7928ca",
+            success: "#00ff00",
+        },
+
+        padding: "var(--spacing-md)",
+        backgroundColor: "var(--colors-primary)",
+    }}
+/>
+```
+
+**Generates (only used variables):**
+
+```css
+.vw-abc123 {
+    --spacing-md: 16px;
+    --colors-primary: #0070f3;
+    padding: var(--spacing-md);
+    background-color: var(--colors-primary);
+}
+```
+
+**Key Benefits:**
+
+-   🎯 **Lazy Generation**: Only injects variables you actually use
+-   📦 **Organization**: Group related variables (spacing, colors, typography)
+-   🔄 **Partial Updates**: Override individual values in pseudo-classes
+-   ⚡ **Performance**: Reduces CSS output size
+
+**Partial Updates in Pseudo-Classes:**
+
+```tsx
+<varwolf.div
+    style={{
+        __spacing: {
+            xs: "4px",
+            sm: "8px",
+            md: "16px",
+        },
+
+        padding: "var(--spacing-md)",
+
+        _hover: {
+            __spacing: {
+                md: "20px", // Only override this one value
+            },
+        },
+    }}
+/>
 ```
 
 ### Pseudo-Classes (`_` prefix)
@@ -142,7 +208,7 @@ Change variables on pseudo-states using camelCase:
 }
 ```
 
-## Pseudo-Elements (`$` prefix)
+### Pseudo-Elements (`$` prefix)
 
 Style `::before`, `::after`, and other pseudo-elements with the `$` prefix:
 
@@ -156,7 +222,6 @@ Style `::before`, `::after`, and other pseudo-elements with the `$` prefix:
         $before: {
             content: "→",
             marginRight: "5px",
-            __iconColor: "white",
             color: "var(--icon-color)",
         },
 
@@ -276,15 +341,20 @@ Varwolf supports two types of styles for optimal performance:
 
 #### **`style` prop** — Stylesheet Rendering
 
-Use for static styles and pseudo-classes:
+Use for static styles, pseudo-classes, and pseudo-elements:
 
 ```tsx
 <varwolf.button
     style={{
         backgroundColor: "red",
         padding: "10px 20px",
+
         _hover: {
             backgroundColor: "darkred",
+        },
+
+        $before: {
+            content: "→",
         },
     }}
 >
@@ -438,6 +508,51 @@ Reference values from other pseudo-states:
 
 ## 🎨 Advanced Usage
 
+### Design System with Variable Groups
+
+Create a reusable design system:
+
+```tsx
+const designSystem = {
+    __spacing: {
+        xxs: "2px",
+        xs: "4px",
+        sm: "8px",
+        md: "16px",
+        lg: "24px",
+        xl: "32px",
+        xxl: "48px",
+    },
+
+    __colors: {
+        primary: "#0070f3",
+        secondary: "#7928ca",
+        success: "#00ff00",
+        error: "#ff0000",
+    },
+
+    __fontSize: {
+        xs: "12px",
+        sm: "14px",
+        md: "16px",
+        lg: "18px",
+        xl: "24px",
+    },
+}
+
+// Use in components - only injects variables you actually use!
+<varwolf.button
+    style={{
+        ...designSystem,
+        padding: "var(--spacing-md)",
+        fontSize: "var(--font-size-md)",
+        backgroundColor: "var(--colors-primary)",
+    }}
+>
+    Button
+</varwolf.button>
+```
+
 ### Variable Composition
 
 Compose complex values from multiple variables:
@@ -534,12 +649,12 @@ function ScrollCard() {
 ```tsx
 import type { VarwolfStyles, VarwolfInlineStyles } from "varwolf"
 
-// VarwolfStyles - for style prop (supports pseudo-classes)
+// VarwolfStyles - for style prop (supports pseudo-classes & pseudo-elements)
 interface ComponentProps {
     style?: VarwolfStyles
 }
 
-// VarwolfInlineStyles - for inlineStyle prop (no pseudo-classes)
+// VarwolfInlineStyles - for inlineStyle prop (no pseudo-classes/elements)
 interface ComponentProps {
     inlineStyle?: VarwolfInlineStyles
 }
@@ -576,9 +691,16 @@ import { useVarwolf } from "varwolf"
 function CustomComponent() {
     const { className } = useVarwolf({
         __bg: "red",
+
         backgroundColor: "var(--bg)",
-        _hover: { __bg: "darkred" },
-        $before: { content: "->" },
+
+        _hover: {
+            __bg: "darkred",
+        },
+
+        $before: {
+            content: "→",
+        },
     })
 
     // Use with third-party components
@@ -598,10 +720,11 @@ function CustomComponent() {
 -   CSS injected via `insertRule()` (3x faster)
 -   Optimized for performance
 
-### Caching
+### Caching & Optimization
 
 -   Stable hashing prevents duplicate injections
 -   Styles cached across component re-renders
+-   **Lazy variable generation**: Only injects variables you use from groups
 -   React StrictMode compatible
 
 ## 🔧 TypeScript
@@ -643,7 +766,7 @@ Yes! Varwolf generates CSS custom properties that work with any CSS.
 
 ### What's the difference between `style` and `inlineStyle`?
 
--   **`style`**: Static styles + pseudo-classes → Injected into `<style>` tag
+-   **`style`**: Static styles + pseudo-classes + pseudo-elements → Injected into `<style>` tag
 -   **`inlineStyle`**: Dynamic values → Applied as inline `style=""` attribute
 
 Use `style` for most cases, `inlineStyle` for frequently changing values (animations, scroll, drag).
@@ -685,7 +808,7 @@ All modern browsers supporting CSS custom properties:
 
 ## 🙏 Contributing
 
-Contributions Welcome! Please open an [issue](https://github.com/KunalTanwar/varkit/issues) or [PR](https://github.com/KunalTanwar/varkit/pulls) on [GitHub](https://github.com/KunalTanwar/varwolf).
+Contributions Welcome! Please open an [issue](https://github.com/KunalTanwar/varwolf/issues) or [PR](https://github.com/KunalTanwar/varwolf/pulls) on [GitHub](https://github.com/KunalTanwar/varwolf).
 
 ## 🌟 Show Your Support
 

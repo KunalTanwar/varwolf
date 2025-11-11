@@ -11,6 +11,12 @@ function App() {
                 __bg: "red",
                 __size: "100px",
 
+                __spacing: {
+                    sm: "10px",
+                    md: "20px",
+                    lg: "30px",
+                },
+
                 color: "white",
                 display: "flex",
                 aspectRatio: 1 / 1,
@@ -18,6 +24,7 @@ function App() {
                 alignItems: "center",
                 height: "var(--size)",
                 justifyContent: "center",
+                padding: "var(--spacing-lg)",
                 backgroundColor: "var(--bg)",
 
                 _hover: {
@@ -32,6 +39,10 @@ function App() {
                 $after: {
                     __size: "1rem",
 
+                    __spacing: {
+                        sm: "5px",
+                    },
+
                     content: "",
                     position: "absolute",
                     top: 0,
@@ -40,6 +51,7 @@ function App() {
                     height: "var(--size)",
                     translate: "50% -50%",
                     borderRadius: "100vmax",
+                    padding: "var(--spacing-lg)",
                     backgroundColor: "limegreen",
                 },
             }}

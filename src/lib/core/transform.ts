@@ -10,14 +10,6 @@ import {
 } from "../constants"
 import { devWarn, toKebabCase } from "../utils"
 
-/**
- * Result of style transformation containing separated CSS variables, regular styles, and pseudo-classes.
- *
- * @property CSSVars - CSS custom properties with -- prefix (e.g., { '--bg': 'red' })
- * @property regularStyles - Standard CSS properties (e.g., { padding: '10px' })
- * @property pseudoClasses - Pseudo-class styles organized by selector (e.g., { 'hover': { '--bg': 'blue' } })
- * @property pseudoElements - Pseudo-element styles organized by element (e.g., { 'before': { 'content': '""' } })
- **/
 export interface TransformResult {
     CSSVars: Record<string, string>
     regularStyles: React.CSSProperties
@@ -25,96 +17,98 @@ export interface TransformResult {
     pseudoElements: Record<string, Record<string, string>>
 }
 
-/**
- * Context passed through recursive style transformation calls.
- *
- * Maintains state during nested pseudo-class processing to handle:
- * - Variable inheritance from parent scopes
- * - State-based variable resolution
- * - Compound pseudo-class selectors (e.g., :hover:focus)
- *
- * @property parentVars - CSS variables from parent scope (for nested pseudo-classes)
- * @property stateVarsMap - Map of pseudo-class states to their CSS variables
- * @property parentPseudoClasses - Chain of parent pseudo-classes for compound selectors
- *
- * @internal
- **/
 interface TransformContext {
     parentVars?: Record<string, string>
     stateVarsMap?: Map<string, Record<string, string>>
     parentPseudoClasses?: string[]
 }
 
-/**
- * Extracts the "from" parameter value from a variable function.
- *
- * Parses function source code to find the `from` parameter value, which
- * indicates which pseudo-class state a variable should reference.
- *
- * @param fn - The function to parse
- * @returns The from parameter value, or undefined if not found
- *
- * @example
- * ```
- * const fn = (currentValue, from = 'hover') => currentValue
- * extractFromParam(fn) // Returns: 'hover'
- * ```
- *
- * @internal
- **/
 function extractFromParam(fn: Function): string | undefined {
     const fnString = fn.toString()
     const match = fnString.match(/from\s*=\s*["']([^"']+)["']/)
+
     return match ? match[1] : undefined
+}
+
+/**
+ * Checks if a value is a plain object (for variable groups)
+ * @internal
+ **/
+function isPlainObject(value: any): boolean {
+    return (
+        value !== null &&
+        typeof value === "object" &&
+        !Array.isArray(value) &&
+        Object.getPrototypeOf(value) === Object.prototype
+    )
+}
+
+/**
+ * Extracts CSS variable names from a string value
+ * @internal
+ **/
+function extractUsedVariables(value: string): string[] {
+    const varRegex = /var\((--[\w-]+)\)/g
+    const matches: string[] = []
+
+    let match
+
+    while ((match = varRegex.exec(value)) !== null) {
+        matches.push(match[1])
+    }
+
+    return matches
+}
+
+/**
+ * Scans styles to find which CSS variables are actually used
+ * @internal
+ **/
+function findUsedVariables(styles: Record<string, any>): Set<string> {
+    const usedVars = new Set<string>()
+
+    function scan(obj: any, parentKey = "") {
+        if (!obj || typeof obj !== "object") return
+
+        for (const [key, value] of Object.entries(obj)) {
+            // Skip variable definitions at root level
+            if (parentKey === "" && key.startsWith("__")) {
+                continue
+            }
+
+            // Scan pseudo-classes and pseudo-elements
+            if (key.startsWith("_") || key.startsWith("$")) {
+                scan(value, key)
+
+                continue
+            }
+
+            // Extract variables from string values
+            if (typeof value === "string") {
+                const vars = extractUsedVariables(value)
+
+                vars.forEach((v) => usedVars.add(v))
+            } else if (typeof value === "object") {
+                scan(value, key)
+            }
+        }
+    }
+
+    scan(styles)
+
+    return usedVars
 }
 
 /**
  * Transforms Varwolf style objects into CSS-ready format.
  *
- * Core transformation engine that processes Varwolf's custom style syntax:
- * - `__variable` → CSS custom properties (--variable)
- * - `_pseudoClass` → Pseudo-class selectors (:pseudo-class)
- * - Regular properties → Standard CSS properties
- * - Function values → Computed values with state references
+ * Supports:
+ * - CSS variables: __bg, __spacing: { sm, md, lg }
+ * - Pseudo-classes: _hover, _focus
+ * - Pseudo-elements: $before, $after
+ * - Function-based variables
  *
- * Features:
- * - Recursive processing for nested pseudo-classes
- * - Variable inheritance across pseudo-class boundaries
- * - Function-based variable resolution with state references
- * - Compound pseudo-class support (:hover:focus)
- * - Development warnings for invalid pseudo-classes
- *
- * @param styles - The Varwolf style object to transform
- * @param context - Transformation context for recursive calls (internal use)
- * @returns Transformed styles separated by type
- *
- * @example
- * ```
- * const result = transformStyles({
- *   __bg: 'red',
- *   padding: '10px',
- *   _hover: {
- *     __bg: 'blue'
- *   }
- * })
- *
- * // result = {
- * //   CSSVars: { '--bg': 'red' },
- * //   regularStyles: { padding: '10px' },
- * //   pseudoClasses: { 'hover': { '--bg': 'blue' } }
- * // }
- * ```
- *
- * @example
- * ```
- * // Function-based variables
- * transformStyles({
- *   __opacity: 1,
- *   _hover: {
- *     __opacity: (current) => Number(current) * 0.8
- *   }
- * })
- * ```
+ * Variable groups are lazily generated - only used variables are injected.
  **/
 export function transformStyles(styles: Record<string, any>, context: TransformContext = {}): TransformResult {
     const CSSVars: Record<string, string> = {}
@@ -122,31 +116,58 @@ export function transformStyles(styles: Record<string, any>, context: TransformC
     const pseudoClasses: Record<string, Record<string, string>> = {}
     const pseudoElements: Record<string, Record<string, string>> = {}
 
-    // Initialize state tracking for variable resolution
     const stateVarsMap = context.stateVarsMap || new Map<string, Record<string, string>>()
     const parentPseudoClasses = context.parentPseudoClasses || []
 
-    // Initialize base state for top-level calls
     if (!context.stateVarsMap) {
         stateVarsMap.set("base", {})
     }
 
+    // Find used variables (only at top level for optimization)
+    const usedVariables = !context.parentVars ? findUsedVariables(styles) : null
+
     // First pass: Process static values and nested pseudo-classes
     for (const [key, value] of Object.entries(styles)) {
         if (key.startsWith("__")) {
-            // CSS variable: __bgColor → --bg-color
             const cleanKey = key.slice(2)
             const kebabKey = toKebabCase(cleanKey)
-            const varName = "--" + kebabKey
 
-            if (typeof value === "string" || typeof value === "number") {
+            // Check if it's a variable group (plain object)
+            if (isPlainObject(value)) {
+                // Variable group: __spacing: { sm: '8px', md: '16px' }
+                for (const [subKey, subValue] of Object.entries(value)) {
+                    const subKebabKey = toKebabCase(subKey)
+                    const fullVarName = `--${kebabKey}-${subKebabKey}`
+
+                    // Skip if not used (optimization - only at top level)
+                    if (usedVariables && !usedVariables.has(fullVarName)) {
+                        continue
+                    }
+
+                    if (typeof subValue === "string" || typeof subValue === "number") {
+                        CSSVars[fullVarName] = String(subValue)
+
+                        if (!context.parentVars) {
+                            stateVarsMap.get("base")![fullVarName] = String(subValue)
+                        }
+                    } else {
+                        devWarn(
+                            `Invalid value in variable group "${cleanKey}.${subKey}".`,
+                            `Variable groups can only contain strings or numbers.`,
+                            `Received: ${typeof subValue}`
+                        )
+                    }
+                }
+            } else if (typeof value === "string" || typeof value === "number") {
+                // Regular variable
+                const varName = "--" + kebabKey
                 CSSVars[varName] = String(value)
 
-                // Track base state variables for function resolution
                 if (!context.parentVars) {
                     stateVarsMap.get("base")![varName] = String(value)
                 }
             }
+            // Functions handled in second pass
         } else if (key.startsWith("$")) {
             const elementName = key.slice(1) as PseudoElement
 
@@ -157,18 +178,15 @@ export function transformStyles(styles: Record<string, any>, context: TransformC
                         ",\n\t"
                     )}\n]`
                 )
-
                 continue
             }
 
-            // Recursively process pseudo-element styles
             const nestedResult = transformStyles(value, {
                 parentVars: CSSVars,
                 stateVarsMap,
                 parentPseudoClasses: [],
             })
 
-            // Merge CSS variables and regular styles for this pseudo-element
             const mergedStyles: Record<string, string> = {
                 ...nestedResult.CSSVars,
             }
@@ -181,10 +199,8 @@ export function transformStyles(styles: Record<string, any>, context: TransformC
 
             pseudoElements[elementName] = mergedStyles
         } else if (key.startsWith("_")) {
-            // Pseudo-class: _hover → :hover
             const pseudoClass = toKebabCase(key.slice(1)) as MostCommonPseudoClass
 
-            // Validate pseudo-class in development
             if (!MOST_COMMON_PSEUDO_CLASSES_SET.has(pseudoClass)) {
                 devWarn(
                     `Unsupported pseudo-class: "${pseudoClass}" (from key: "${key}")`,
@@ -194,38 +210,34 @@ export function transformStyles(styles: Record<string, any>, context: TransformC
                 )
             }
 
-            // Build compound selector for nested pseudo-classes (e.g., hover:focus)
             const compoundSelector = [...parentPseudoClasses, pseudoClass].join(":")
 
-            // Recursively process nested pseudo-class styles
             const nestedResult = transformStyles(value, {
                 parentVars: CSSVars,
                 stateVarsMap,
                 parentPseudoClasses: [...parentPseudoClasses, pseudoClass],
             })
 
-            // Merge CSS variables and regular styles for this pseudo-class
             const mergedStyles: Record<string, string> = {
                 ...nestedResult.CSSVars,
             }
 
             for (const [cssKey, cssValue] of Object.entries(nestedResult.regularStyles)) {
                 const kebabKey = toKebabCase(cssKey)
+
                 mergedStyles[kebabKey] = String(cssValue)
             }
 
-            // Store pseudo-class variables for function resolution
             stateVarsMap.set(compoundSelector, nestedResult.CSSVars)
             pseudoClasses[compoundSelector] = mergedStyles
 
-            // Include nested pseudo-classes (for :hover:focus scenarios)
             Object.assign(pseudoClasses, nestedResult.pseudoClasses)
         } else {
             regularStyles[key] = value
         }
     }
 
-    // Second pass: Process function-based variables (dependent on first pass)
+    // Second pass: Process function-based variables
     for (const [key, value] of Object.entries(styles)) {
         if (key.startsWith("__") && typeof value === "function") {
             const cleanKey = key.slice(2)
@@ -233,13 +245,10 @@ export function transformStyles(styles: Record<string, any>, context: TransformC
             const varName = "--" + kebabKey
 
             try {
-                // Extract state reference from function parameter
                 const fromState = extractFromParam(value)
-
                 let currentValue: string | number = ""
 
                 if (fromState) {
-                    // Resolve variable from specified state
                     const targetStateVars = stateVarsMap.get(fromState)
 
                     if (!targetStateVars) {
@@ -262,7 +271,6 @@ export function transformStyles(styles: Record<string, any>, context: TransformC
                         )
                     }
                 } else {
-                    // Resolve from parent scope or current scope
                     currentValue = context.parentVars?.[varName] ?? CSSVars[varName] ?? ""
 
                     if (!currentValue && !context.parentVars) {
@@ -273,11 +281,9 @@ export function transformStyles(styles: Record<string, any>, context: TransformC
                     }
                 }
 
-                // Compute the final value
                 const computedValue = value(currentValue, fromState)
                 CSSVars[varName] = String(computedValue)
 
-                // Update base state with computed value
                 if (!context.parentVars) {
                     stateVarsMap.get("base")![varName] = String(computedValue)
                 }
