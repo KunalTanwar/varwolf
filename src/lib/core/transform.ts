@@ -3,9 +3,9 @@
  * @module varwolf/core/transform
  **/
 import {
-    MOST_COMMON_PSEUDO_CLASSES_SET,
+    STANDARD_PSEUDO_CLASSES_SET,
     PSEUDO_ELEMENTS_SET,
-    type MostCommonPseudoClass,
+    type StandardPseudoClass,
     type PseudoElement,
 } from "../constants"
 import { devWarn, toKebabCase } from "../utils"
@@ -199,13 +199,13 @@ export function transformStyles(styles: Record<string, any>, context: TransformC
 
             pseudoElements[elementName] = mergedStyles
         } else if (key.startsWith("_")) {
-            const pseudoClass = toKebabCase(key.slice(1)) as MostCommonPseudoClass
+            const pseudoClass = toKebabCase(key.slice(1)) as StandardPseudoClass
 
-            if (!MOST_COMMON_PSEUDO_CLASSES_SET.has(pseudoClass)) {
+            if (!STANDARD_PSEUDO_CLASSES_SET.has(pseudoClass)) {
                 devWarn(
                     `Unsupported pseudo-class: "${pseudoClass}" (from key: "${key}")`,
                     `\nVarwolf supports the 16 most common Pseudo-classes: \n[\n\t${Array.from(
-                        MOST_COMMON_PSEUDO_CLASSES_SET
+                        STANDARD_PSEUDO_CLASSES_SET
                     ).join(",\n\t")}\n]`
                 )
             }

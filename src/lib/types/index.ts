@@ -2,7 +2,7 @@
  * @fileoverview Core TypeScript type definitions for Varwolf styling system
  * @module varwolf/types
  **/
-import type { MostCommonPseudoClass, PseudoElement } from "../constants"
+import type { StandardPseudoClass, PseudoElement } from "../constants"
 import type { KebabToCamelCase } from "./kebab-to-camel"
 
 /**
@@ -28,7 +28,7 @@ type VariablePrefix = `__${string}`
  *
  * Matches supported pseudo-class names prefixed with a single underscore.
  * The pseudo-class name must be in camelCase format (e.g., _hover, _focusVisible).
- * Only the 16 most common pseudo-classes are supported for type safety.
+ * All standard CSS pseudo-classes are supported.
  *
  * @example
  * ```
@@ -39,9 +39,13 @@ type VariablePrefix = `__${string}`
  * '_disabled'
  * '_focusVisible'
  * '_checked'
+ * '_autofill'
+ * '_inRange'
+ * '_popoverOpen'
+ * // ... and 39 more standard pseudo-classes
  * ```
  **/
-type PseudoClassPrefix = `_${KebabToCamelCase<MostCommonPseudoClass>}`
+type PseudoClassPrefix = `_${KebabToCamelCase<StandardPseudoClass>}`
 
 type PseudoElementPrefix = `$${PseudoElement}`
 
@@ -73,7 +77,7 @@ type PseudoElementPrefix = `$${PseudoElement}`
 type VariableValue =
     | string
     | number
-    | ((currentValue: string | number, from?: MostCommonPseudoClass) => string | number)
+    | ((currentValue: string | number, from?: StandardPseudoClass) => string | number)
     | Record<string, string | number>
 
 /**

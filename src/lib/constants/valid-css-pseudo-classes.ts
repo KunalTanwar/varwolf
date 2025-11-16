@@ -67,26 +67,7 @@ const STANDARD_PSEUDO_CLASSES = [
     "volume-locked",
 ] as const
 
-const MOST_COMMON_PSEUDO_CLASSES = [
-    "active",
-    "checked",
-    "disabled",
-    "enabled",
-    "first-child",
-    "focus-visible",
-    "focus-within",
-    "focus",
-    "hover",
-    "invalid",
-    "last-child",
-    "link",
-    "placeholder-shown",
-    "required",
-    "valid",
-    "visited",
-] as const
-
-export const MOST_COMMON_PSEUDO_CLASSES_SET = new Set(MOST_COMMON_PSEUDO_CLASSES)
+export const STANDARD_PSEUDO_CLASSES_SET = new Set(STANDARD_PSEUDO_CLASSES)
 
 export const VALID_PSEUDO_CLASSES = new Set([
     ...EXPERIMENTAL_PSEUDO_CLASSES,
@@ -94,7 +75,7 @@ export const VALID_PSEUDO_CLASSES = new Set([
     ...STANDARD_PSEUDO_CLASSES,
 ])
 
-export type MostCommonPseudoClass = (typeof MOST_COMMON_PSEUDO_CLASSES)[number]
+export type StandardPseudoClass = (typeof STANDARD_PSEUDO_CLASSES)[number]
 export type ValidPseudoClass =
     | (typeof EXPERIMENTAL_PSEUDO_CLASSES)[number]
     | (typeof FUNCTIONAL_PSEUDO_CLASSES)[number]
