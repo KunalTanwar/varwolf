@@ -1,5 +1,23 @@
 # 🐺 Varwolf
 
+[![Status](https://img.shields.io/badge/Status-v2.0%20Rewrite-yellow)](https://github.com/KunalTanwar/varwolf/tree/v2-dev)
+[![Stable](https://img.shields.io/badge/Stable-v1.3.0-green)](https://github.com/KunalTanwar/varwolf/tree/v1.3.0)
+[![npm](https://img.shields.io/npm/v/varwolf)](https://www.npmjs.com/package/varwolf)
+[![Bundle Size](https://img.shields.io/bundlephobia/minzip/varwolf)](https://bundlephobia.com/package/varwolf)
+
+> [!IMPORTANT]
+> **Varwolf v2.0 Rewrite In Progress** 🚧
+>
+> I am completely rewriting Varwolf from the ground up with:
+>
+> -   ⚡ **`Bun`** for blazing fast builds (replacing `pnpm`)
+> -   🏗️ **Modern folder structure** following best practices for TypeScript libraries
+> -   🎯 **Schema-based pseudo-classes** for better maintainability
+> -   🧩 **Functional pseudo-class support** (`:has()`, `:not()`, `:is()`) and more.
+> -   📦 **Improved TypeScript types** and developer experience
+>
+> Current stable version: [v1.3.0](https://github.com/KunalTanwar/varwolf/tree/v1.3.0)
+
 **A Modern CSS Variable Manipulation Library for React.**
 
 Varwolf lets you dynamically control CSS variables with a clean, type-safe API. Write styles with pseudo-classes, pseudo-elements, variable groups, and dynamic values — all while maintaining the performance and specificity benefits of CSS-in-JS.
